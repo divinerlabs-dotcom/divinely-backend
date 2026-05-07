@@ -173,3 +173,45 @@ router.post('/text-only', express.json(), async (req, res) => {
 });
 
 module.exports = router;
+
+// Audio generation endpoint - returns MP3 file directly
+router.post('/speak', async (req, res) => {
+  try {
+    const { text, userId } = req.body;
+    if (!text) return res.status(400).json({ error: 'text required' });
+
+    const FISH_API_KEY = process.env.FISH_AUDIO_API_KEY;
+    const FISH_MODEL_ID = process.env.FISH_AUDIO_MODEL_ID;
+
+    const ttsResponse = await fetch('https://api.fish.audio/v1/tts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FISH_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: text,
+        format: 'mp3',
+        latency: 'normal',
+        reference_id: FISH_MODEL_ID,
+      })
+    });
+
+    if (!ttsResponse.ok) {
+      const err = await ttsResponse.text();
+      return res.status(500).json({ error: 'TTS failed', detail: err });
+    }
+
+    // Stream audio directly to app
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Transfer-Encoding': 'chunked',
+    });
+    ttsResponse.body.pipe(res);
+
+  } catch (error) {
+    console.error('[Voice] Speak failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
