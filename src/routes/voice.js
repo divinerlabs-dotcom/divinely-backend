@@ -202,11 +202,10 @@ router.post('/speak', async (req, res) => {
     }
 
     // Stream audio directly to app
-    res.set({
-      'Content-Type': 'audio/mpeg',
-      'Transfer-Encoding': 'chunked',
-    });
-    ttsResponse.body.pipe(res);
+    res.set({ 'Content-Type': 'audio/mpeg' });
+    const arrayBuffer = await ttsResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    res.send(buffer);
 
   } catch (error) {
     console.error('[Voice] Speak failed:', error);
