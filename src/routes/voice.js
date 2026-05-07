@@ -172,8 +172,6 @@ router.post('/text-only', express.json(), async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // Audio generation endpoint - returns MP3 file directly
 router.post('/speak', async (req, res) => {
   try {
@@ -215,3 +213,5 @@ router.post('/speak', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+module.exports = router;
