@@ -214,3 +214,43 @@ router.post('/speak', async (req, res) => {
 });
 
 module.exports = router;
+
+// GET version of speak endpoint for FileSystem.downloadAsync compatibility
+router.get('/speak', async (req, res) => {
+  try {
+    const { text, userId } = req.query;
+    if (!text) return res.status(400).json({ error: 'text required' });
+
+    const FISH_API_KEY = process.env.FISH_AUDIO_API_KEY;
+    const FISH_MODEL_ID = process.env.FISH_AUDIO_MODEL_ID;
+
+    const ttsResponse = await fetch('https://api.fish.audio/v1/tts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FISH_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: text,
+        format: 'mp3',
+        latency: 'normal',
+        reference_id: FISH_MODEL_ID,
+      })
+    });
+
+    if (!ttsResponse.ok) {
+      const err = await ttsResponse.text();
+      return res.status(500).json({ error: 'TTS failed', detail: err });
+    }
+
+    res.set({ 'Content-Type': 'audio/mpeg' });
+    const arrayBuffer = await ttsResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('[Voice] GET Speak failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
