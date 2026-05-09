@@ -175,11 +175,11 @@ router.post('/text-only', express.json(), async (req, res) => {
 // Audio generation endpoint - returns MP3 file directly
 router.post('/speak', async (req, res) => {
   try {
-    const { text, userId } = req.body;
+    const { text, userId, voiceModelId } = req.body;
     if (!text) return res.status(400).json({ error: 'text required' });
 
     const FISH_API_KEY = process.env.FISH_AUDIO_API_KEY;
-    const FISH_MODEL_ID = process.env.FISH_AUDIO_MODEL_ID;
+    const FISH_MODEL_ID = voiceModelId || process.env.FISH_AUDIO_MODEL_ID;
 
     const ttsResponse = await fetch('https://api.fish.audio/v1/tts', {
       method: 'POST',
@@ -218,11 +218,11 @@ module.exports = router;
 // GET version of speak endpoint for FileSystem.downloadAsync compatibility
 router.get('/speak', async (req, res) => {
   try {
-    const { text, userId } = req.query;
+    const { text, userId, voiceModelId } = req.query;
     if (!text) return res.status(400).json({ error: 'text required' });
 
     const FISH_API_KEY = process.env.FISH_AUDIO_API_KEY;
-    const FISH_MODEL_ID = process.env.FISH_AUDIO_MODEL_ID;
+    const FISH_MODEL_ID = voiceModelId || process.env.FISH_AUDIO_MODEL_ID;
 
     const ttsResponse = await fetch('https://api.fish.audio/v1/tts', {
       method: 'POST',
