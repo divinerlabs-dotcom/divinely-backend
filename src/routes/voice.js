@@ -254,3 +254,35 @@ router.get('/speak', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// GET /api/video/simli-token - Get Simli session token for video avatar
+router.get('/simli-token', async (req, res) => {
+  try {
+    const { faceId } = req.query;
+    const SIMLI_API_KEY = process.env.SIMLI_API_KEY;
+    const SIMLI_FACE_ID = faceId || process.env.SIMLI_FACE_ID;
+
+    const response = await fetch('https://api.simli.ai/compose/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-simli-api-key': SIMLI_API_KEY,
+      },
+      body: JSON.stringify({
+        faceId: SIMLI_FACE_ID,
+        audioFormat: 'pcm16',
+        audioSampleRate: 16000,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(500).json({ error: 'Simli token failed', detail: err });
+    }
+
+    const data = await response.json();
+    res.json({ success: true, session_token: data.session_token, faceId: SIMLI_FACE_ID });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});

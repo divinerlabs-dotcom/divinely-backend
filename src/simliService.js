@@ -1,64 +1,27 @@
-const fetch = require('node-fetch');
-
 const SIMLI_API_KEY = process.env.SIMLI_API_KEY;
 
-// Create a Simli session for real-time video avatar
+// Create a Simli session using new compose API
 async function createSimliSession(faceId) {
-  const response = await fetch('https://api.simli.ai/startAudioToVideoSession', {
+  const response = await fetch('https://api.simli.ai/compose/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      apiKey: SIMLI_API_KEY,
-      faceId: faceId,
-      syncAudio: true,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Simli session failed: ${error}`);
-  }
-
-  return await response.json();
-}
-
-// Send audio chunk to Simli for lip-sync video
-async function sendAudioToSimli(sessionToken, audioBase64) {
-  const response = await fetch('https://api.simli.ai/sendAudio', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      session_token: sessionToken,
-      audio: audioBase64,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Simli audio send failed: ${error}`);
-  }
-
-  return await response.json();
-}
-
-// Get available Simli faces
-async function getSimliFaces() {
-  const response = await fetch('https://api.simli.ai/faces', {
-    headers: {
       'x-simli-api-key': SIMLI_API_KEY,
     },
+    body: JSON.stringify({
+      faceId: faceId,
+      audioFormat: 'pcm16',
+      audioSampleRate: 16000,
+    }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Simli faces failed: ${error}`);
+    throw new Error('Simli session failed: ' + error);
   }
 
-  return await response.json();
+  const data = await response.json();
+  return { session_token: data.session_token, success: true };
 }
 
-module.exports = { createSimliSession, sendAudioToSimli, getSimliFaces };
+module.exports = { createSimliSession };
