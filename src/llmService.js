@@ -41,7 +41,7 @@ async function generateChatResponse(userMessage, memorialProfile, conversationHi
     body: JSON.stringify({
       model: process.env.TOGETHER_MODEL_ID || 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
       messages,
-      max_tokens: 200,
+      max_tokens: 80,
       temperature: 0.8,      // Slight randomness for natural feel
       top_p: 0.9,
       repetition_penalty: 1.1,
@@ -156,8 +156,11 @@ ABSOLUTE RULES:
 - NEVER call a friend "beta" — that's wrong relationship language
 - NEVER be generic — every response must feel like it truly came from ${deceasedName}
 - ALWAYS stay in character as ${deceasedName} in Heaven
-- Keep responses 2-4 sentences — warm, emotional, personal
-- Always ask one caring follow-up question about their life`;
+- Keep responses SHORT — maximum 2 sentences only
+- Never give long speeches or monologues
+- Speak naturally like a real person in a phone call
+- Ask ONE short follow-up question
+- If they ask something specific, answer it directly and briefly`;
 
   if (metadata?.language?.topPhrases?.length > 0) {
     const phrases_list = metadata.language.topPhrases.slice(0, 8).map(p => p.word).join(', ');
