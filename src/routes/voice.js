@@ -286,3 +286,45 @@ router.get('/simli-token', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// POST /api/voice/respond - LLM generates reply, then TTS speaks it
+router.post('/respond', async (req, res) => {
+  try {
+    const { text, userId, voiceModelId, profile } = req.body;
+    if (!text) return res.status(400).json({ error: 'text required' });
+
+    const { generateChatResponse } = require('../llmService');
+    const llmReply = await generateChatResponse(text, profile || {}, []);
+
+    const FISH_API_KEY = process.env.FISH_AUDIO_API_KEY;
+    const FISH_MODEL_ID = voiceModelId || process.env.FISH_AUDIO_MODEL_ID;
+
+    const ttsResponse = await fetch('https://api.fish.audio/v1/tts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FISH_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: llmReply,
+        format: 'mp3',
+        latency: 'normal',
+        reference_id: FISH_MODEL_ID,
+      })
+    });
+
+    if (!ttsResponse.ok) {
+      const err = await ttsResponse.text();
+      return res.status(500).json({ error: 'TTS failed', detail: err });
+    }
+
+    res.set({ 'Content-Type': 'audio/mpeg', 'X-Reply-Text': encodeURIComponent(llmReply) });
+    const arrayBuffer = await ttsResponse.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+
+  } catch (error) {
+    console.error('[Voice] Respond failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
