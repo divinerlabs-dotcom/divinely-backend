@@ -65,3 +65,42 @@ router.get('/usage/:userId', async (req, res) => {
 });
 
 module.exports = router;
+
+// POST /api/video/did-upload - Upload photo to D-ID
+router.post('/did-upload', async (req, res) => {
+  try {
+    const { imageBase64, fileName } = req.body;
+    if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
+    const { uploadImageToDID } = require('../didService');
+    const buffer = Buffer.from(imageBase64, 'base64');
+    const result = await uploadImageToDID(buffer, fileName || 'profile.jpg');
+    res.json({ success: true, imageUrl: result.url, imageId: result.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/video/did-talk - Create talking video
+router.post('/did-talk', async (req, res) => {
+  try {
+    const { sourceUrl, text, voiceId } = req.body;
+    if (!sourceUrl || !text) return res.status(400).json({ error: 'sourceUrl and text required' });
+    const { createTalkingVideo } = require('../didService');
+    const result = await createTalkingVideo(sourceUrl, text, voiceId);
+    res.json({ success: true, talkId: result.id, status: result.status });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/video/did-status/:talkId - Check video status
+router.get('/did-status/:talkId', async (req, res) => {
+  try {
+    const { talkId } = req.params;
+    const { getTalkStatus } = require('../didService');
+    const result = await getTalkStatus(talkId);
+    res.json({ success: true, status: result.status, videoUrl: result.result_url });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
