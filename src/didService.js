@@ -1,19 +1,20 @@
 const DID_API_KEY = process.env.DID_API_KEY;
 const DID_BASE = 'https://api.d-id.com';
 
-// Upload image to D-ID and get image URL
+// Upload image buffer to D-ID
 async function uploadImageToDID(imageBuffer, fileName) {
-  const FormData = require('form-data');
-  const form = new FormData();
-  form.append('image', imageBuffer, { filename: fileName, contentType: 'image/jpeg' });
+  const Blob = (await import('node:buffer')).Blob;
+  
+  const formData = new FormData();
+  const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+  formData.append('image', blob, fileName || 'profile.jpg');
 
   const response = await fetch(`${DID_BASE}/images`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${DID_API_KEY}`,
-      ...form.getHeaders()
     },
-    body: form
+    body: formData
   });
 
   if (!response.ok) {
@@ -56,7 +57,7 @@ async function createTalkingVideo(sourceUrl, text, voiceId = 'en-US-JennyNeural'
   }
 
   const data = await response.json();
-  return data; // { id, status }
+  return data;
 }
 
 // Poll for video completion
@@ -72,7 +73,7 @@ async function getTalkStatus(talkId) {
     throw new Error(`D-ID status check failed: ${err}`);
   }
 
-  return await response.json(); // { status, result_url }
+  return await response.json();
 }
 
 module.exports = { uploadImageToDID, createTalkingVideo, getTalkStatus };
