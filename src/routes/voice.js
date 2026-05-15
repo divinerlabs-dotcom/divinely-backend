@@ -328,3 +328,25 @@ router.post('/respond', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// POST /api/voice/clone-direct - Clone voice from base64 audio (bypasses S3)
+router.post('/clone-direct', express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    const { userId, speakerName, audioBase64, mimeType } = req.body;
+    if (!userId || !audioBase64) {
+      return res.status(400).json({ error: 'userId and audioBase64 required' });
+    }
+    const os = require('os');
+    const fs = require('fs');
+    const ext = (mimeType || 'audio/mpeg').includes('mp4') ? '.mp4' : '.mp3';
+    const tempPath = `${os.tmpdir()}/voice_${Date.now()}${ext}`;
+    fs.writeFileSync(tempPath, Buffer.from(audioBase64, 'base64'));
+    const { cloneVoice } = require('../fishAudioService');
+    const result = await cloneVoice([tempPath], speakerName || 'Memorial Voice');
+    fs.unlinkSync(tempPath);
+    res.json({ success: true, voiceModelId: result.modelId });
+  } catch (error) {
+    console.error('[Clone Direct]', error);
+    res.status(500).json({ error: error.message });
+  }
+});
