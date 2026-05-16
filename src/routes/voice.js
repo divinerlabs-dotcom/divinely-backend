@@ -350,3 +350,36 @@ router.post('/clone-direct', express.json({ limit: '50mb' }), async (req, res) =
     res.status(500).json({ error: error.message });
   }
 });
+
+// POST /api/voice/transcribe - Convert audio to text using Deepgram
+router.post('/transcribe', async (req, res) => {
+  try {
+    const multer = require('multer');
+    const upload = multer({ storage: multer.memoryStorage() });
+    upload.single('audio')(req, res, async (err) => {
+      if (err || !req.file) return res.status(400).json({ error: 'No audio file', text: '' });
+      try {
+        const DEEPGRAM_KEY = process.env.DEEPGRAM_API_KEY;
+        if (!DEEPGRAM_KEY) {
+          // Fallback: return empty if no Deepgram key
+          return res.json({ text: '', error: 'No Deepgram key' });
+        }
+        const response = await fetch('https://api.deepgram.com/v1/listen?language=en&model=nova-2', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Token ${DEEPGRAM_KEY}`,
+            'Content-Type': req.file.mimetype || 'audio/m4a',
+          },
+          body: req.file.buffer
+        });
+        const data = await response.json();
+        const text = data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+        res.json({ text, success: true });
+      } catch (e) {
+        res.json({ text: '', error: e.message });
+      }
+    });
+  } catch (error) {
+    res.json({ text: '', error: error.message });
+  }
+});
